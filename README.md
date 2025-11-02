@@ -399,10 +399,15 @@ if fuzz.ratio(rw, nw) >= threshold:
     * Matched 'psychiatry neurobehavioral medicine' (sim=0.92)
 
 ---
-Script 2 — Hierarchical Word2Vec + TF-IDF Weighted Fuzzy Mapper
-
-* ensem_w2v.py – Union Ensemble (Recommended)
+Script 3 — Hierarchical Word2Vec + Simple Word2Vec Ensemble
+"""It is one of my attempts to boost prediction accuracy, but could not be completed due to time constraint."""
+* ensem_w2v.py – Union Ensemble
 * A meta-model that runs both models automatically, merges their results, and produces a final unified prediction CSV.
+* Pipeline:
+   * Imports and runs both models (simple_w2v and hier_w2v).
+   * Aggregates results by raw_specialty.
+   * Combines NUCC codes using set union:
+   * combined_codes = codes_simple.union(codes_hier)
 * Strengths
     * Captures semantic proximity between conceptually related specialties (e.g., "acupuncturist" ↔ "reflexologist").
     * More robust when context or domain meaning matters.
@@ -420,36 +425,15 @@ combined_codes = codes_simple.union(codes_hier)
     * simple_only
     * hier_only
     * simple+hier
-
 * Produces a consolidated, high-confidence result table.
-
 * Outputs
 ./output/output_union_ensemble.csv (or .xlsx)
 
 * Columns:
 raw_specialty, nucc_codes, source, explanation_simple, explanation_hier
-
 * Why It’s Better
-* Combines syntactic recall (from the simple model) with semantic precision (from the hierarchical model).
-* The union ensemble ensures no valid prediction is lost — maximizing accuracy safely.
-
-* Below is another promising attempt of mine, which cannot be completed due to time constraints.
-  * ensem_w2v.py — Union Ensemble
-    * A meta-model that executes both base models and merges their predictions.
-
-* Pipeline:
-   * Imports and runs both models (simple_w2v and hier_w2v).
-   * Aggregates results by raw_specialty.
-   * Combines NUCC codes using set union:
-   * combined_codes = codes_simple.union(codes_hier)
-
-* Labels the prediction source as:
-    * simple_only
-    * hier_only
-    * simple+hier
-
-* Outputs a unified DataFrame or Excel file.
-
+    * Combines syntactic recall (from the simple model) with semantic precision (from the hierarchical model).
+    * The union ensemble ensures no valid prediction is lost — maximizing accuracy safely.
 * Rationale:
     * The simple model handles noisy / misspelled inputs better.
     * The hierarchical model captures conceptual similarity.
@@ -458,7 +442,7 @@ raw_specialty, nucc_codes, source, explanation_simple, explanation_hier
 ---
 Script 4 — Consistency Evaluation and Confidence Validation
 
-* This script (script_4.py) is designed to test the reliability and consistency of your ensemble pipeline (script_3.py).
+* This script (consistency_check.py) is designed to test the reliability and consistency of your ensemble pipeline (ensem_w2v.py).
 * It runs the ensemble twice on a random subset of input specialties and compares the results to measure model stability and prediction agreement.
 * Objective
     * In real-world healthcare NLP pipelines, semantic models (like Word2Vec + TF-IDF) can produce slightly different outputs across runs due to:
