@@ -62,7 +62,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
         * raw_specialty — free-text specialty string(s)
 
           Input sample (head):
-        ![Input Sample](./eda/classification_distribution.png)
+        ![Input Sample](./eda/grouping_distribution.png.png)
     
     How to create these in a notebook quickly:
     
