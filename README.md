@@ -24,16 +24,14 @@ This lack of standardization creates downstream issues (claim routing errors, mi
 
 Goal: Build a system that reads unstandardized specialties and maps them to official NUCC taxonomy code(s) while handling:
 
-Abbreviations and synonyms (e.g., OBGYN → Obstetrics & Gynecology)
+* Abbreviations and synonyms (e.g., OBGYN → Obstetrics & Gynecology)
 
-Misspellings/typos and partial words
+* Misspellings/typos and partial words
 
-Multi-specialties and noisy phrases
+* Multi-specialties and noisy phrases
 
 Junk inputs (return JUNK if confidence is too low)
-
-***
-
+---
 2) Datasets Provided
 
 NUCC Taxonomy Master: dataset/nucc_taxonomy_master.csv
