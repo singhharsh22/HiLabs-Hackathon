@@ -35,7 +35,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
 2) Datasets Provided
 
     NUCC Taxonomy Master: dataset/nucc_taxonomy_master.csv
-    Columns typically include:
+   Columns typically include:
     
     * code — the NUCC taxonomy code (primary output)
     
@@ -75,7 +75,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
     inp.head(10).to_markdown("output/input_head.md", index=False)
     # Optionally render markdown to image (or screenshot in notebook and save as PNG)
 
-3) Synonym Dictionary
+4) Synonym Dictionary
 
 To handle healthcare shorthand and abbreviations, you can provide dataset/synonyms.csv with two columns:
 
