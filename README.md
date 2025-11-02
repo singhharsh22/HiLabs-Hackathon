@@ -333,91 +333,56 @@ Result: output/output_specialties_hier_w2v.csv
     ```
    * Model Overview
         * simple_w2v.py — Syntactic Word2Vec Mapper
-        * A lightweight, token-level embedding model emphasizing string-level similarity.
+            * A lightweight, token-level embedding model emphasizing string-level similarity.
+            * Key features:
+            * Trains a Word2Vec model (100-dim skip-gram) on cleaned NUCC text.
+            * Expands abbreviations and synonyms using synonyms.csv.
+            * Handles spelling variations using rapidfuzz fuzzy matching.
+            * Represents each NUCC entry as the mean of token embeddings.
+            * For each raw specialty:
+                  * Cleans text and expands synonyms.
+                  * Filters NUCC rows with fuzzy word overlap.
+                  * Computes cosine similarity between input and NUCC embeddings.
+                  * Returns all codes above SIM_THRESHOLD (default = 0.8).
+            
+            * Strengths:
+                  * Robust against typos and abbreviations (e.g., 0b/gyn → OB/GYN).
+                  * Simple, interpretable results with fuzzy explanations.
+              
+       * hier_w2v.py — Hierarchical Semantic Word2Vec Mapper
+           * A deeper model incorporating semantic context and hierarchy of the NUCC taxonomy.
+           * Key features:
+               * Trains progressively on:
+                   * grouping
+                   * classification
+                   * specialization + display_name + definition
+                   * Uses TF-IDF weighted embeddings for sentence vectors.
+                   * Combines fuzzy lexical overlap with semantic similarity.
+                   * Produces ranked matches with similarity-based confidence scores.
+            * Strengths:
+            * Learns semantic proximity between related specialties (e.g., "acupuncturist" ↔ "reflexologist").
+            * More context-aware than the simple model.
     
-    * Key features:
-    * Trains a Word2Vec model (100-dim skip-gram) on cleaned NUCC text.
-    * Expands abbreviations and synonyms using synonyms.csv.
+    * ensem_w2v.py — Union Ensemble
+        * A meta-model that executes both base models and merges their predictions.
     
-    Handles spelling variations using rapidfuzz fuzzy matching.
+    * Pipeline:
+       * Imports and runs both models (simple_w2v and hier_w2v).
+       * Aggregates results by raw_specialty.
+       * Combines NUCC codes using set union:
+       * combined_codes = codes_simple.union(codes_hier)
     
-    Represents each NUCC entry as the mean of token embeddings.
+    * Labels the prediction source as:
+        * simple_only
+        * hier_only
+        * simple+hier
     
-    For each raw specialty:
+    * Outputs a unified DataFrame or Excel file.
     
-    Cleans text and expands synonyms.
-    
-    Filters NUCC rows with fuzzy word overlap.
-    
-    Computes cosine similarity between input and NUCC embeddings.
-    
-    Returns all codes above SIM_THRESHOLD (default = 0.8).
-    
-    Strengths:
-    
-    Robust against typos and abbreviations (e.g., 0b/gyn → OB/GYN).
-    
-    Simple, interpretable results with fuzzy explanations.
-    
-    2️⃣ hier_w2v.py — Hierarchical Semantic Word2Vec Mapper
-    
-    A deeper model incorporating semantic context and hierarchy of the NUCC taxonomy.
-    
-    Key features:
-    
-    Trains progressively on:
-    
-    grouping
-    
-    classification
-    
-    specialization + display_name + definition
-    
-    Uses TF-IDF weighted embeddings for sentence vectors.
-    
-    Combines fuzzy lexical overlap with semantic similarity.
-    
-    Produces ranked matches with similarity-based confidence scores.
-    
-    Strengths:
-    
-    Learns semantic proximity between related specialties
-    (e.g., "acupuncturist" ↔ "reflexologist").
-    
-    More context-aware than the simple model.
-    
-    3️⃣ ensem_w2v.py — Union Ensemble
-    
-    A meta-model that executes both base models and merges their predictions.
-    
-    Pipeline:
-    
-    Imports and runs both models (simple_w2v and hier_w2v).
-    
-    Aggregates results by raw_specialty.
-    
-    Combines NUCC codes using set union:
-    
-    combined_codes = codes_simple.union(codes_hier)
-    
-    
-    Labels the prediction source as:
-    
-    simple_only
-    
-    hier_only
-    
-    simple+hier
-    
-    Outputs a unified DataFrame or Excel file.
-    
-    Rationale:
-    
-    The simple model handles noisy / misspelled inputs better.
-    
-    The hierarchical model captures conceptual similarity.
-    
-    The ensemble (union) leverages both — increasing recall safely.
+    * Rationale:
+        * The simple model handles noisy / misspelled inputs better.
+        * The hierarchical model captures conceptual similarity.
+        * The ensemble (union) leverages both — increasing recall safely.
 
 to be safe, i think i should combine (take union of both the results)
 as simple w2v works well on spelling mistakes (like 0b/gyn) where complex one doesn't, and the complex one gives more robust predictions (embeds according to classes also, giving nearby possible answers), like accupunturist and reflexologist, which the simpler model doesn't predict, by learning a bit semantics, while the simple model learns only the syntactics
