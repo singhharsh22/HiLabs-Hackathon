@@ -1,6 +1,6 @@
 # HiLabs-Hackathon
 An intelligent system that takes unstandardized specialties and maps them to official NUCC taxonomy codes.
-Mapping noisy provider specialties to official NUCC taxonomy codes
+* Mapping noisy provider specialties to official NUCC taxonomy codes
 1) Problem Introduction
 
     Health plans store millions of provider records where the specialty is often entered as free text:
