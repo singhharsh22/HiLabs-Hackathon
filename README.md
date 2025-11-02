@@ -62,7 +62,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
         * raw_specialty — free-text specialty string(s)
       
       Input sample (head):
-        ![Input Sample]()
+        ![Input Sample](./eda/raw_specialty_head.png)
 
 4) Synonym Dictionary
 
