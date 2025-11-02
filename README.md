@@ -16,9 +16,9 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
 1) Problem Introduction
 
 Health plans store millions of provider records where the specialty is often entered as free text:
-
+```
 "Cardio", "ENT Surgeon", "Pediatrics - General", "Addiction Med", ...
-
+```
 
 This lack of standardization creates downstream issues (claim routing errors, mismatched directories, and network adequacy gaps). The NUCC Taxonomy provides the federal standard: each specialty/sub-specialty has a unique taxonomy code (e.g., 207L00000X).
 
