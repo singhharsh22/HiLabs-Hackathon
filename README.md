@@ -62,7 +62,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
         * raw_specialty — free-text specialty string(s)
       
       Input sample (head):
-        ![Input Sample](./eda/raw_specialty_head.png)
+   ![Input Sample](./eda/raw_specialty_head.png)
 
 3) Synonym Dictionary
 
@@ -77,7 +77,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
     
     Only semantic expansions are handled here — spelling corrections and near matches are addressed later via fuzzy matching and vector similarity.
    synonymns.csv sample (head):
-        ![syn](./eda/syn_head.png)
+![syn](./eda/syn_head.png)
 
 5) EDA: Understanding the NUCC Space
 
