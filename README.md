@@ -32,6 +32,8 @@ Multi-specialties and noisy phrases
 
 Junk inputs (return JUNK if confidence is too low)
 
+***
+
 2) Datasets Provided
 
 NUCC Taxonomy Master: dataset/nucc_taxonomy_master.csv
