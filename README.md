@@ -83,10 +83,10 @@ The system does not fix spelling mistakes here (that’s left to fuzzy matching)
 Before building the matcher, we visualize label distributions to understand class imbalance and vocabulary:
 
 Grouping distribution:
-![Grouping Distribution](./output/grouping_distribution.png)
+![Grouping Distribution](.eda/nucc_dict_head.png)
 
 Classification distribution:
-![Classification Distribution](./output/classification_distribution.png)
+![Classification Distribution](./eda/raw_specialty_head.png)
 
 How to generate these images (notebook snippet):
 
