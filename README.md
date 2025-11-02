@@ -91,7 +91,7 @@ Classification distribution:
 ---
 5) Methodology & Pipeline
 
-    This section explains how the Hierarchical Word2Vec + Fuzzy Hybrid Mapper standardizes raw provider specialties to NUCC taxonomy codes.
+This section explains how the Hierarchical Word2Vec + Fuzzy Hybrid Mapper standardizes raw provider specialties to NUCC taxonomy codes.
     The approach combines text cleaning, hierarchical Word2Vec embeddings, TF–IDF weighting, and fuzzy token matching to ensure robust mapping even for misspellings, abbreviations, and domain-specific shorthand.
     ---
     Step 0 – Stopword Initialization
