@@ -34,28 +34,29 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
 
 2) Datasets Provided
 
-    NUCC Taxonomy Master: dataset/nucc_taxonomy_master.csv
+    * NUCC Taxonomy Master: dataset/nucc_taxonomy_master.csv
    
-   Columns typically include:
+       Columns typically include:
+        
+        * code — the NUCC taxonomy code (primary output)
+        
+        * grouping — broad professional domain
+        
+        * classification — main specialty (e.g., Internal Medicine)
+        
+        * specialization — sub-specialty (e.g., Cardiovascular Disease)
+        
+        * display_name — a readable label
+        
+        * definition — description / notes
+        
+        * status — active/deprecated
     
-    * code — the NUCC taxonomy code (primary output)
-    
-    * grouping — broad professional domain
-    
-    * classification — main specialty (e.g., Internal Medicine)
-    
-    * specialization — sub-specialty (e.g., Cardiovascular Disease)
-    
-    * display_name — a readable label
-    
-    * definition — description / notes
-    
-    * status — active/deprecated
-    
-    Sample Input: dataset/input_specialties.csv
-    Columns:
-    
-    raw_specialty — free-text specialty string(s)
+    * Sample Input: dataset/input_specialties.csv
+      
+      Columns:
+        
+        * raw_specialty — free-text specialty string(s)
     
     You will add two preview images under output/ that show the first 10 rows of each dataset.
     
