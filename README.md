@@ -301,55 +301,113 @@ hier_w2v.py – Hierarchical Semantic Word2Vec Mapper
     * Strengths
         * Captures semantic proximity between conceptually related specialties (e.g., "acupuncturist" ↔ "reflexologist").
         * More robust when context or domain meaning matters.
+    * Configuration Parameters
+```
+Parameter	Description	Default
+FUZZ_THRESHOLD	Minimum RapidFuzz ratio for word-level candidate filtering	80
+SIM_THRESHOLD	Minimum cosine similarity between embeddings	0.8
+TFIDF_MIN_WEIGHT	Floor for weight normalization (avoids division by 0)	1e-9
 
+FUZZ_THRESHOLD = 80
+SIM_THRESHOLD = 0.8
+TFIDF_MIN_WEIGHT = 1e-9
+```
 
+* Step-by-Step Pipeline
+    * Data Loading & Normalization
+    * Loads NUCC taxonomy and input specialties
+    * Normalizes column names (lowercase, stripped)
+    * Loads synonyms.csv → creates {synonym → standard} dictionary
+```
+syn_dict = dict(zip(syn["synonym"].str.lower(), syn["standard"].str.lower()))
+```
+* Text Cleaning & Tokenization
+    * Each text entry is converted to token lists:
+    * Lowercasing • Punctuation removal
+    * Symbol expansion (& → and, / → space)
+    * Stopword removal
+    * Synonym expansion (e.g. obgyn → obstetrics gynecology)
+```
+def clean_text(s):
+    s = re.sub(r"[^a-z0-9&/\-\s]", " ", s.lower())
+    tokens = [expand_synonyms(w) for w in s.split() if w not in STOPWORDS]
+    return tokens
+```
+* Hierarchical Corpus Construction
+    * NUCC text fields are processed at multiple hierarchical levels:
+    * Grouping (e.g. “Behavioral Health & Social Service Providers”)
+    * Classification (e.g. “Psychologist”)
+    * Specialization + Display Name + Definition
+```
+nucc["combined_tokens"] = (
+    nucc["classification"] + " " +
+    nucc["specialization"] + " " +
+    nucc["display_name"] + " " +
+    nucc["definition"]
+).apply(clean_text)
+```
+* Hierarchical Word2Vec Training
+    * three-stage incremental training strategy:
+    * Train base embeddings on grouping tokens
+    * Expand vocabulary + train on classification tokens
+    * Fine-tune on full combined_tokens
+```
+model = Word2Vec(sentences=sentences_grouping, vector_size=150, window=5, sg=1, epochs=20)
+model.build_vocab(sentences_class, update=True);  model.train(..., epochs=15)
+model.build_vocab(sentences_full, update=True);   model.train(..., epochs=15)
+```
+
+* This ensures hierarchical context:
+    * Group → Class → Specialization improves semantic coherence.
+
+* TF-IDF Weighting
+    * To emphasize informative words (e.g. “neuropsychiatry”, “pediatric”), a TF-IDF Model (Gensim) is trained on the combined corpus.
+    * Each word vector is scaled by its TF-IDF weight, producing a weighted mean embedding for every sentence.
+```
+def sentence_embedding_tfidf(words):
+    bow = dictionary.doc2bow(words)
+    tfidf_weights = dict(tfidf_model[bow])
+    vecs = [model.wv[w] * tfidf_weights[dictionary.token2id[w]] for w in words if w in model.wv]
+    return np.sum(vecs, axis=0) / (np.sum(tfidf_weights.values()) + 1e-9)
+```
+
+* This reduces the influence of frequent but uninformative terms (“general”, “clinic”, “health”).
+
+* NUCC Embedding Precomputation
+    * All NUCC taxonomy entries are pre-embedded once for efficiency:
+```
+nucc["embedding"] = nucc["combined_tokens"].apply(sentence_embedding_tfidf)
+nucc_matrix = np.vstack(nucc["embedding"].values)
+```
+* Fuzzy Candidate Filtering
+    * For each raw specialty:
+        * Tokens are fuzzily compared (via RapidFuzz ≥ FUZZ_THRESHOLD)
+        * Only NUCC entries with any overlapping similar words are shortlisted as candidates
+```
+if fuzz.ratio(rw, nw) >= threshold:
+    candidates.append(i)
+```
+* Cosine Similarity Matching
+    * The raw specialty’s TF-IDF weighted vector is compared against candidate embeddings using cosine similarity.
+    * Matches ≥ SIM_THRESHOLD are accepted; others fall back to the highest-similarity NUCC term (labeled JUNK).
+* Confidence and Explanation
+    * Each returned match includes:
+        * nucc_code — official taxonomy code
+        * confidence — cosine similarity (0–1)
+        * explanation — human-readable rationale
+* Example:
+    * Matched 'psychiatry neurobehavioral medicine' (sim=0.92)
 
 ---
+Script 2 — Hierarchical Word2Vec + TF-IDF Weighted Fuzzy Mapper
 
-
-ensem_w2v.py – Union Ensemble (Recommended)
-
-A meta-model that runs both models automatically, merges their results, and produces a final unified prediction CSV.
-
-Working Logic
-
-Imports and executes both base scripts (simple_w2v and hier_w2v).
-
-Aggregates and merges predictions by raw_specialty.
-
-Takes the union of NUCC codes from both models:
-
-combined_codes = codes_simple.union(codes_hier)
-
-
-Labels each prediction source as:
-
-simple_only
-
-hier_only
-
-simple+hier
-
-Produces a consolidated, high-confidence result table.
-
-Outputs
-
-./output/output_union_ensemble.csv (or .xlsx)
-Columns:
-raw_specialty, nucc_codes, source, explanation_simple, explanation_hier
-
-Why It’s Better
-
-Combines syntactic recall (from the simple model) with semantic precision (from the hierarchical model).
-
-The union ensemble ensures no valid prediction is lost — maximizing accuracy safely.
-
+* ensem_w2v.py – Union Ensemble (Recommended)
+* A meta-model that runs both models automatically, merges their results, and produces a final unified prediction CSV.
 * Strengths
     * Captures semantic proximity between conceptually related specialties (e.g., "acupuncturist" ↔ "reflexologist").
     * More robust when context or domain meaning matters.
     * ensem_w2v.py – Union Ensemble (Recommended)
     * A meta-model that runs both models automatically, merges their results, and produces a final unified prediction CSV.
-
 * Working Logic
     * Imports and executes both base scripts (simple_w2v and hier_w2v).
     * Aggregates and merges predictions by raw_specialty.
