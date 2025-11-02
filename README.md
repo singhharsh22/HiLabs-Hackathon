@@ -34,46 +34,46 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
 
 2) Datasets Provided
 
-        NUCC Taxonomy Master: dataset/nucc_taxonomy_master.csv
-        Columns typically include:
-        
-        * code — the NUCC taxonomy code (primary output)
-        
-        * grouping — broad professional domain
-        
-        * classification — main specialty (e.g., Internal Medicine)
-        
-        * specialization — sub-specialty (e.g., Cardiovascular Disease)
-        
-        * display_name — a readable label
-        
-        * definition — description / notes
-        
-        * status — active/deprecated
-        
-        Sample Input: dataset/input_specialties.csv
-        Columns:
-        
-        raw_specialty — free-text specialty string(s)
-        
-        You will add two preview images under output/ that show the first 10 rows of each dataset.
-        
-        2.1 Preview Images (to be added by you)
-        
-        NUCC sample (head):
-        ![NUCC Sample](./output/nucc_head.png)
-        
-        Input sample (head):
-        ![Input Sample](./output/input_head.png)
-        
-        How to create these in a notebook quickly:
-        
-        import pandas as pd
-        nucc = pd.read_csv("dataset/nucc_taxonomy_master.csv")
-        inp  = pd.read_csv("dataset/input_specialties.csv")
-        nucc.head(10).to_markdown("output/nucc_head.md", index=False)
-        inp.head(10).to_markdown("output/input_head.md", index=False)
-        # Optionally render markdown to image (or screenshot in notebook and save as PNG)
+    NUCC Taxonomy Master: dataset/nucc_taxonomy_master.csv
+    Columns typically include:
+    
+    * code — the NUCC taxonomy code (primary output)
+    
+    * grouping — broad professional domain
+    
+    * classification — main specialty (e.g., Internal Medicine)
+    
+    * specialization — sub-specialty (e.g., Cardiovascular Disease)
+    
+    * display_name — a readable label
+    
+    * definition — description / notes
+    
+    * status — active/deprecated
+    
+    Sample Input: dataset/input_specialties.csv
+    Columns:
+    
+    raw_specialty — free-text specialty string(s)
+    
+    You will add two preview images under output/ that show the first 10 rows of each dataset.
+    
+    2.1 Preview Images (to be added by you)
+    
+    NUCC sample (head):
+    ![NUCC Sample](./output/nucc_head.png)
+    
+    Input sample (head):
+    ![Input Sample](./output/input_head.png)
+    
+    How to create these in a notebook quickly:
+    
+    import pandas as pd
+    nucc = pd.read_csv("dataset/nucc_taxonomy_master.csv")
+    inp  = pd.read_csv("dataset/input_specialties.csv")
+    nucc.head(10).to_markdown("output/nucc_head.md", index=False)
+    inp.head(10).to_markdown("output/input_head.md", index=False)
+    # Optionally render markdown to image (or screenshot in notebook and save as PNG)
 
 3) Synonym Dictionary
 
