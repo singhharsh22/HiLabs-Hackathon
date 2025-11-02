@@ -51,22 +51,18 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
         * definition — description / notes
         
         * status — active/deprecated
+
+       NUCC sample (head):
+    ![NUCC Sample](./output/nucc_head.png)
     
     * Sample Input: dataset/input_specialties.csv
       
       Columns:
         
         * raw_specialty — free-text specialty string(s)
-    
-    You will add two preview images under output/ that show the first 10 rows of each dataset.
-    
-    2.1 Preview Images (to be added by you)
-    
-    NUCC sample (head):
-    ![NUCC Sample](./output/nucc_head.png)
-    
-    Input sample (head):
-    ![Input Sample](./output/input_head.png)
+
+          Input sample (head):
+        ![Input Sample](./output/input_head.png)
     
     How to create these in a notebook quickly:
     
