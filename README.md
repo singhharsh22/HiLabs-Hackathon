@@ -53,7 +53,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
         * status — active/deprecated
 
        NUCC sample (head):
-    ![NUCC Sample](./eda/grouping_distribution.png)
+    ![NUCC Sample](./eda/eda/classification_distribution.png)
     
     * Sample Input: dataset/input_specialties.csv
       
@@ -62,7 +62,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
         * raw_specialty — free-text specialty string(s)
 
           Input sample (head):
-        ![Input Sample](./eda/classification_distribution.png)
+        ![Input Sample](./eda/eda/classification_distribution.png)
     
     How to create these in a notebook quickly:
     
