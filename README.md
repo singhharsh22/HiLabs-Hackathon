@@ -89,105 +89,196 @@ Grouping distribution:
 Classification distribution:
 ![Classification Distribution](./eda/classification_distribution.png)
 ---
-5) Methodology (Step-by-Step)
+5) Methodology & Pipeline
 
-    This repo implements a hierarchical Word2Vec + TF-IDF + Fuzzy hybrid:
+    This section explains how the Hierarchical Word2Vec + Fuzzy Hybrid Mapper standardizes raw provider specialties to NUCC taxonomy codes.
+    The approach combines text cleaning, hierarchical Word2Vec embeddings, TF–IDF weighting, and fuzzy token matching to ensure robust mapping even for misspellings, abbreviations, and domain-specific shorthand.
+    ---
+    Step 0 – Stopword Initialization
     
-    5.1 Text Cleaning
+    The pipeline uses a locally stored stopword list to ensure reproducibility (no external downloads).
+    All stopwords are read from ./stopwords/english.
+    ```
+    STOPWORDS_PATH = "./stopwords/english"
+    with open(STOPWORDS_PATH, "r", encoding="utf-8") as f:
+        STOPWORDS = set(w.strip().lower() for w in f if w.strip())
+    ```
     
-    Split CamelCase (PainSpine → Pain Spine)
+    This ensures the solution can run offline, meeting the hackathon’s no external API/dependency requirement.
+    ---
+    Step 1 – Data Loading
     
-    Lowercase, remove punctuation except / - & (kept as signals), normalize whitespace
+    Both reference (nucc_taxonomy_master.csv) and input (input_specialties.csv) datasets are loaded from the local ./dataset folder.
+    ```
+    base_path = "./dataset"
+    nucc = pd.read_csv(f"{base_path}/nucc_taxonomy_master.csv")
+    inp  = pd.read_csv(f"{base_path}/input_specialties.csv")
     
-    Remove stopwords using ./stopwords/english.txt (no external downloads)
+    nucc.columns = [c.strip().lower() for c in nucc.columns]
+    inp.columns  = [c.strip().lower()  for c in inp.columns]
+    ```
     
-    5.2 Build Hierarchical Corpora
+    This normalization step ensures consistent downstream column access.
+    ---
+    Step 2 – Text Cleaning & Tokenization
     
-    We prepare three corpora from the NUCC dataset:
+    Free-text fields (like classification, specialization, display name, and definition) are cleaned and tokenized.
+    The cleaning removes punctuation, normalizes case, and filters stopwords.
+    ```
+    def clean_text(s):
+        if pd.isna(s): return ""
+        s = re.sub(r"([a-z])([A-Z])", r"\1 \2", str(s))
+        s = re.sub(r"[^a-z0-9&/\-\s]", " ", s.lower())
+        s = s.replace("&"," and ").replace("-", " ").replace("/", " ")
+        tokens = [w for w in s.split() if w not in STOPWORDS]
+        return tokens
+    ```
     
-    Grouping tokens
+    This ensures that both NUCC and raw specialties share a normalized lexical space.
+    ---
+    Step 3 – Hierarchical Corpus Construction
     
-    Classification tokens
+    NUCC data has a natural hierarchy:
+    Grouping → Classification → Specialization → Display Name → Definition
     
-    Combined tokens = classification + specialization + display_name + definition
+    Each level is tokenized separately, then combined to build a progressively richer corpus.
+    ```
+    nucc["grouping_tokens"]       = nucc["grouping"].apply(clean_text)
+    nucc["classification_tokens"] = nucc["classification"].apply(clean_text)
+    nucc["combined_tokens"] = (
+        nucc["classification"].fillna('') + " " +
+        nucc["specialization"].fillna('') + " " +
+        nucc["display_name"].fillna('') + " " +
+        nucc["definition"].fillna('')
+    ).apply(clean_text)
+    ```
+    ---
+    Step 4 – Hierarchical Word2Vec Training
     
-    This lets us infuse broad → fine semantics progressively.
+    A progressive fine-tuning strategy trains Word2Vec at increasing semantic depths:
     
-    5.3 Train Word2Vec in Three Stages
+    Grouping level – learns broad medical domains
     
-    Train base Word2Vec on grouping tokens
+    Classification level – refines main specialty clusters
     
-    Update the same model on classification tokens
+    Combined level – encodes detailed contextual information
+    ```
+    model = Word2Vec(sentences=nucc["grouping_tokens"], vector_size=150, window=5, sg=1, epochs=20)
     
-    Fine-tune on the full combined tokens
+    # Fine-tune on deeper levels
+    model.build_vocab(nucc["classification_tokens"], update=True)
+    model.train(nucc["classification_tokens"], total_examples=len(nucc), epochs=15)
     
-    This mimics the taxonomy hierarchy and nudges embeddings to respect NUCC structure without labeled supervised training.
+    model.build_vocab(nucc["combined_tokens"], update=True)
+    model.train(nucc["combined_tokens"], total_examples=len(nucc), epochs=15)
+    ```
     
-    5.4 TF-IDF Weighted Sentence Embeddings
+    This hierarchical retraining ensures embeddings capture both macro-specialty relationships and micro-subspecialty nuances.
+    ---
+    Step 5 – TF-IDF Weighted Sentence Embeddings
     
-    Build a Gensim Dictionary over combined tokens and a TfidfModel
+    To aggregate token embeddings into a single sentence vector, a TF–IDF weighting scheme is applied.
+    This gives higher weight to discriminative medical terms (e.g., cardio, neuro) and downweights generic words.
+    ```
+    dictionary = Dictionary(nucc["combined_tokens"])
+    corpus     = [dictionary.doc2bow(text) for text in nucc["combined_tokens"]]
+    tfidf_model = TfidfModel(corpus)
     
-    For each NUCC row and each query, compute a TF-IDF weighted mean of token vectors
+    def sentence_embedding_tfidf(words):
+        vecs, weights = [], []
+        bow = dictionary.doc2bow(words)
+        tfidf_weights = dict(tfidf_model[bow])
+        for w in words:
+            if w in model.wv and dictionary.token2id.get(w) in tfidf_weights:
+                weight = tfidf_weights[dictionary.token2id[w]]
+                vecs.append(model.wv[w] * weight)
+                weights.append(weight)
+        return np.sum(vecs, axis=0) / (np.sum(weights) + 1e-9) if vecs else np.zeros(model.vector_size)
+    ```
+    ---
+    Step 6 – NUCC Embedding Precomputation
     
-    This gives sentence embeddings that emphasize discriminative words
+    Each NUCC row’s cleaned text is embedded once and stored for efficient similarity lookup.
+    ```
+    nucc["embedding"] = nucc["combined_tokens"].apply(sentence_embedding_tfidf)
+    nucc_matrix = np.vstack(nucc["embedding"].values)
+    ```
+    ---
+    Step 7 – Hybrid Matching: Fuzzy + Semantic
     
-    5.5 Candidate Narrowing with Fuzzy Token Overlap
+    The system uses a two-stage matching pipeline:
     
-    Before cosine similarity, filter NUCC rows by token-level fuzzy match (RapidFuzz ratio)
+    Fuzzy Filtering — Quickly narrow down NUCC candidates that share lexically similar tokens with the input
     
-    This drops obviously unrelated specialties and speeds up similarity
+    Semantic Ranking — Among those, compute cosine similarity between TF-IDF-weighted embeddings
+    ```
+    def fuzzy_word_overlap(raw_words, nucc_words, threshold=80):
+        for rw in raw_words:
+            for nw in nucc_words:
+                if fuzz.ratio(rw, nw) >= threshold:
+                    return True
+        return False
+    ```
     
-    Why both?
+    For each raw specialty, candidates passing fuzzy overlap are scored by semantic similarity:
+    ```
+    sims = cosine_similarity(query_emb, nucc_matrix[candidates])[0]
+    valid_idx = np.where(sims >= sim_threshold)[0]
+    ```
     
-    Fuzzy catches typos/variants at token level (e.g., 0B/GYN, obgyn, ob/gyn).
+    Results are sorted by descending similarity.
+    ---
+    Step 8 – Output Assembly & Cleaning
     
-    Embeddings capture semantic similarity across synonyms and related phrasing.
+    Each raw specialty is mapped to all matching taxonomy codes above the similarity threshold.
+    Empty inputs are skipped gracefully, and unmatched entries are labeled JUNK.
+    ```
+    row = {
+        "raw_specialty": raw,
+        "nucc_codes": "|".join(codes) if codes else "JUNK",
+        "confidence": "|".join(confs),
+        "explanation": " || ".join(expls)
+    }
+    ```
     
-    5.6 Cosine Similarity & Thresholding
+    The final standardized file is saved as:
+    ```
+    ./output/output_specialties_hier_w2v.csv
+    ```
+    ---
+    6) Output Schema
     
-    Compute cosine similarity between the query embedding and candidate NUCC embeddings
+    The tool writes output/output_specialties_hier_w2v.csv with:
     
-    Return all matches with similarity ≥ SIM_THRESHOLD (e.g., 0.70)
+    Column	Description
+    raw_specialty	Original input string (empty if missing)
+    nucc_codes	Pipe-separated list of NUCC codes or JUNK
+    confidence	Pipe-separated cosine similarities (0–1, rounded) for each returned code
+    explanation	Short rationale e.g., “Matched ‘…tokens…’ (sim=0.83)”
     
-    If none qualify, return the best match score for context or JUNK if below threshold policy
+    Example:
     
-    5.7 Multi-Match Output
+    raw_specialty,nucc_codes,confidence,explanation
+    Cardio,207RC0000X,0.92,Matched 'cardiology internal medicine cardiovascular disease' (sim=0.92)
+    OBGYN,207V00000X,0.89,Matched 'obstetrics gynecology reproductive medicine' (sim=0.89)
+    Something random,JUNK,,No match ≥ 0.70. Best match: 'family medicine' (sim=0.41)
     
-    The system can output multiple taxonomy codes (pipe-separated) for genuinely ambiguous inputs (e.g., “Cardio/Diab”).
-
-6) Output Schema
-
-The tool writes output/output_specialties_hier_w2v.csv with:
-
-Column	Description
-raw_specialty	Original input string (empty if missing)
-nucc_codes	Pipe-separated list of NUCC codes or JUNK
-confidence	Pipe-separated cosine similarities (0–1, rounded) for each returned code
-explanation	Short rationale e.g., “Matched ‘…tokens…’ (sim=0.83)”
-
-Example:
-
-raw_specialty,nucc_codes,confidence,explanation
-Cardio,207RC0000X,0.92,Matched 'cardiology internal medicine cardiovascular disease' (sim=0.92)
-OBGYN,207V00000X,0.89,Matched 'obstetrics gynecology reproductive medicine' (sim=0.89)
-Something random,JUNK,,No match ≥ 0.70. Best match: 'family medicine' (sim=0.41)
-
-7) Confidence Tuning
-
-You control strictness via two knobs:
-
-Fuzzy Token Filter (fuzz_threshold)
-Typical: 70–85.
-Lower → more candidates (recall↑, noise↑).
-Higher → fewer candidates (precision↑, may miss typos).
-
-Cosine Similarity Cutoff (sim_threshold)
-Typical: 0.60–0.80.
-Lower → more matches (recall↑).
-Higher → stricter mapping (precision↑).
-
-Calibration Tip:
-Take a small labeled validation file (10–50 rows), sweep thresholds (grid search), pick the pair that maximizes your preferred metric (e.g., F1 or accuracy), and lock it in the README.
+    7) Confidence Tuning
+    
+    You control strictness via two knobs:
+    
+    Fuzzy Token Filter (fuzz_threshold)
+    Typical: 70–85.
+    Lower → more candidates (recall↑, noise↑).
+    Higher → fewer candidates (precision↑, may miss typos).
+    
+    Cosine Similarity Cutoff (sim_threshold)
+    Typical: 0.60–0.80.
+    Lower → more matches (recall↑).
+    Higher → stricter mapping (precision↑).
+    
+    Calibration Tip:
+    Take a small labeled validation file (10–50 rows), sweep thresholds (grid search), pick the pair that maximizes your preferred metric (e.g., F1 or accuracy), and lock it in the README.
 
 8) How to Run Locally
 
