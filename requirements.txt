@@ -1,0 +1,8 @@
+pandas
+numpy
+nltk
+gensim
+rapidfuzz
+scikit-learn
+tqdm
+openpyxl
