@@ -272,7 +272,10 @@ Classification distribution:
     Cardio,207RC0000X,0.92,Matched 'cardiology internal medicine cardiovascular disease' (sim=0.92)
     OBGYN,207V00000X,0.89,Matched 'obstetrics gynecology reproductive medicine' (sim=0.89)
     Something random,JUNK,,No match ≥ 0.70. Best match: 'family medicine' (sim=0.41)
-    
+
+to be safe, i think i should combine (take union of both the results)
+as simple w2v works well on spelling mistakes (like 0b/gyn) where complex one doesn't, and the complex one gives more robust predictions (embeds according to classes also, giving nearby possible answers), like accupunturist and reflexologist, which the simpler model doesn't predict, by learning a bit semantics, while the simple model learns only the syntactics
+
     7) Confidence Tuning
     
     You control strictness via two knobs:
