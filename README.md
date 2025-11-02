@@ -62,7 +62,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
         * raw_specialty — free-text specialty string(s)
       
       Input sample (head):
-        ![Input Sample](.eda/grouping_distribution.png)
+        ![Input Sample](./eda/classification_distribution.png)
 
 4) Synonym Dictionary
 
@@ -83,7 +83,7 @@ The system does not fix spelling mistakes here (that’s left to fuzzy matching)
 Before building the matcher, we visualize label distributions to understand class imbalance and vocabulary:
 
 Grouping distribution:
-![Grouping Distribution](.eda/nucc_dict_head.png)
+![Grouping Distribution](./eda/nucc_dict_head.png)
 
 Classification distribution:
 ![Classification Distribution](./eda/raw_specialty_head.png)
