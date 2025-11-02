@@ -455,42 +455,64 @@ raw_specialty, nucc_codes, source, explanation_simple, explanation_hier
     * The hierarchical model captures conceptual similarity.
     * The ensemble (union) leverages both — increasing recall safely.
 
+---
+Script 4 — Consistency Evaluation and Confidence Validation
 
-    7) Confidence Tuning
-    
-    You control strictness via two knobs:
-    
-    Fuzzy Token Filter (fuzz_threshold)
-    Typical: 70–85.
-    Lower → more candidates (recall↑, noise↑).
-    Higher → fewer candidates (precision↑, may miss typos).
-    
-    Cosine Similarity Cutoff (sim_threshold)
-    Typical: 0.60–0.80.
-    Lower → more matches (recall↑).
-    Higher → stricter mapping (precision↑).
-    
-    Calibration Tip:
-    Take a small labeled validation file (10–50 rows), sweep thresholds (grid search), pick the pair that maximizes your preferred metric (e.g., F1 or accuracy), and lock it in the README.
+* This script (script_4.py) is designed to test the reliability and consistency of your ensemble pipeline (script_3.py).
+* It runs the ensemble twice on a random subset of input specialties and compares the results to measure model stability and prediction agreement.
+* Objective
+    * In real-world healthcare NLP pipelines, semantic models (like Word2Vec + TF-IDF) can produce slightly different outputs across runs due to:
+        * Random weight initialization
+        * Context window differences
+        * Data shuffling during training
+    * The Consistency Test quantifies this variation by comparing how often the ensemble’s predictions match across independent runs.
+* Methodology
+    * Random Subset Selection
+    * A random sample (e.g., 1 000 specialties) is drawn from the input dataset:
+```
+sample_df = inp.sample(n=1000, random_state=42)
+```
+* This ensures the evaluation is lightweight yet statistically meaningful.
 
+* Run Ensemble Twice
+    * The script imports and executes script_3.py two times, which in turn runs both sub-models (script_1.py + script_2.py) and regenerates the union ensemble
+    * output:
+```
+import importlib
+ensemble = importlib.import_module("script_3")
+pred_run1 = ensemble.FINAL_RESULTS
+pred_run2 = ensemble.FINAL_RESULTS
+```
+* Each run returns predictions in the same order as the input subset.
+
+* Compare Predictions
+* For each raw_specialty, both predictions are compared on their top-ranked NUCC codes.
+```
+match = pred1["nucc_codes"].split("|")[0] == pred2["nucc_codes"].split("|")[0]
+```
+* This comparison checks whether both runs agree on the best prediction.
+* Compute Metrics
+    * Three simple but powerful metrics quantify the model’s reliability:
+```
+Metric	Description	Formula
+Consistency (%)	% of samples where both runs agree	(matches / total) × 100
+Disagreement Rate	% of samples with differing predictions	100 – Consistency
+Mean Confidence Gap	Avg. absolute difference between the top confidences of the two runs	`mean(
+```
 
 9) Notes, Limitations & Extensions
 
-Typos vs. synonyms:
-Typos are primarily handled by fuzzy token overlap; semantic variants are handled by embeddings (plus optional synonyms).
+* Typos vs. synonyms:
+    * Typos are primarily handled by fuzzy token overlap; semantic variants are handled by embeddings (plus optional synonyms).
 
-Multi-label vs. single-label:
-We allow multiple NUCC codes when similarity ties exceed threshold (useful for composite inputs like “Cardio/Diab”).
+* Multi-label vs. single-label:
+    * We allow multiple NUCC codes when similarity ties exceed threshold (useful for composite inputs like “Cardio/Diab”).
 
-Speed:
-The fuzzy candidate filter keeps the cosine step fast enough to process ~20k rows well under 15 minutes on a typical laptop.
+* Speed:
+    * The fuzzy candidate filter keeps the cosine step fast enough to process ~20k rows well under 15 minutes on a typical laptop.
 
-Extensions:
-
-Cache or pre-persist NUCC embeddings (skip recomputation on each run)
-
-Add domain-specific synonyms (e.g., “PM&R” → “physical medicine rehabilitation”)
-
-Add a lightweight spelling-correction layer before fuzzy (optional)
-
-Swap Word2Vec for BioWordVec (pretrained biomedical word2vec) if you ship the vectors locally
+* Extensions:
+    * Cache or pre-persist NUCC embeddings (skip recomputation on each run)
+    * Adding domain-specific synonyms (e.g., “PM&R” → “physical medicine rehabilitation”)
+    * Adding a lightweight spelling-correction layer before fuzzy
+    * Swapping Word2Vec for BioWordVec (pretrained biomedical word2vec) if we ship the vectors locally
