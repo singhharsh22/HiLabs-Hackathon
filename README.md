@@ -64,21 +64,23 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
       Input sample (head):
         ![Input Sample](./eda/raw_specialty_head.png)
 
-4) Synonym Dictionary
+3) Synonym Dictionary
 
-To handle healthcare shorthand and abbreviations, you can provide dataset/synonyms.csv with two columns:
+    To improve robustness against abbreviations, shorthand, and partial words, the system uses a custom synonym dictionary (dataset/synonyms.csv).
+    This file helps map common medical short forms and variants to their standardized forms before embedding or fuzzy comparison.
+    
+    Each entry consists of two columns:
+    
+    * synonym → the raw or shorthand form seen in input data
+    
+    * standard → its canonical expansion used for matching
+    
+    Only semantic expansions are handled here — spelling corrections and near matches are addressed later via fuzzy matching and vector similarity.
+   
+   synonymns.csv sample (head):
+        ![syn](./eda/syn_head.png)
 
-synonym	standard
-obgyn	obstetrics gynecology
-cardio	cardiology
-ent	otolaryngology
-ped	pediatrics
-fm	family medicine
-ortho	orthopedic
-
-The system does not fix spelling mistakes here (that’s left to fuzzy matching); synonyms are for canonical expansions only.
-
-4) EDA: Understanding the NUCC Space
+5) EDA: Understanding the NUCC Space
 
 Before building the matcher, we visualize label distributions to understand class imbalance and vocabulary:
 
