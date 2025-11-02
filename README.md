@@ -400,7 +400,9 @@ if fuzz.ratio(rw, nw) >= threshold:
 
 ---
 Script 3 — Hierarchical Word2Vec + Simple Word2Vec Ensemble
-"""It is one of my attempts to boost prediction accuracy, but could not be completed due to time constraint."""
+
+(It is one of my attempts to boost prediction accuracy, but could not be completed due to time constraint.)
+
 * ensem_w2v.py – Union Ensemble
 * A meta-model that runs both models automatically, merges their results, and produces a final unified prediction CSV.
 * Pipeline:
