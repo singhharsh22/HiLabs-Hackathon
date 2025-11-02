@@ -31,6 +31,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
     * Multi-specialties and noisy phrases
     
     Junk inputs (return JUNK if confidence is too low)
+   
 ---
 2) Datasets Provided
 
@@ -63,6 +64,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
       
       Input sample (head):
    ![Input Sample](./eda/raw_specialty_head.png)
+
 ---
 3) Synonym Dictionary
 
@@ -78,6 +80,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
     Only semantic expansions are handled here — spelling corrections and near matches are addressed later via fuzzy matching and vector similarity.
    synonymns.csv sample (head):
 ![syn](./eda/syn_head.png)
+
 ---
 4) EDA: Understanding the NUCC Space
 
@@ -88,11 +91,13 @@ Grouping distribution:
 
 Classification distribution:
 ![Classification Distribution](./eda/classification_distribution.png)
+
 ---
 5) Methodology & Pipeline
 
    This section explains how the Hierarchical Word2Vec + Fuzzy Hybrid Mapper standardizes raw provider specialties to NUCC taxonomy codes.
     The approach combines text cleaning, hierarchical Word2Vec embeddings, TF–IDF weighting, and fuzzy token matching to ensure robust mapping even for misspellings, abbreviations, and domain-specific shorthand.
+   
     ---
     Step 0 – Stopword Initialization
     
@@ -105,6 +110,7 @@ Classification distribution:
     ```
     
     This ensures the solution can run offline, meeting the hackathon’s no external API/dependency requirement.
+   
     ---
     Step 1 – Data Loading
     
@@ -119,6 +125,7 @@ Classification distribution:
     ```
     
     This normalization step ensures consistent downstream column access.
+   
     ---
     Step 2 – Text Cleaning & Tokenization
     
@@ -135,6 +142,7 @@ Classification distribution:
     ```
     
     This ensures that both NUCC and raw specialties share a normalized lexical space.
+   
     ---
     Step 3 – Hierarchical Corpus Construction
     
@@ -174,6 +182,7 @@ Classification distribution:
     ```
     
     This hierarchical retraining ensures embeddings capture both macro-specialty relationships and micro-subspecialty nuances.
+   
     ---
     Step 5 – TF-IDF Weighted Sentence Embeddings
     
@@ -227,6 +236,7 @@ Classification distribution:
     ```
     
     Results are sorted by descending similarity.
+   
     ---
     Step 8 – Output Assembly & Cleaning
     
