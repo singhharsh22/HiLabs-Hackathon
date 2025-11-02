@@ -76,7 +76,6 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
     * standard → its canonical expansion used for matching
     
     Only semantic expansions are handled here — spelling corrections and near matches are addressed later via fuzzy matching and vector similarity.
-   
    synonymns.csv sample (head):
         ![syn](./eda/syn_head.png)
 
