@@ -31,7 +31,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
     * Multi-specialties and noisy phrases
     
     Junk inputs (return JUNK if confidence is too low)
-
+---
 2) Datasets Provided
 
     * NUCC Taxonomy Master: dataset/nucc_taxonomy_master.csv
@@ -63,7 +63,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
       
       Input sample (head):
    ![Input Sample](./eda/raw_specialty_head.png)
-
+---
 3) Synonym Dictionary
 
     To improve robustness against abbreviations, shorthand, and partial words, the system uses a custom synonym dictionary (dataset/synonyms.csv).
@@ -88,29 +88,7 @@ Grouping distribution:
 
 Classification distribution:
 ![Classification Distribution](./eda/classification_distribution.png)
-
-How to generate these images (notebook snippet):
-
-import pandas as pd
-import matplotlib.pyplot as plt
-
-nucc = pd.read_csv("dataset/nucc_taxonomy_master.csv")
-
-plt.figure()
-nucc['grouping'].value_counts().head(20).plot(kind='bar', rot=60)
-plt.title('Top Groupings (count)')
-plt.tight_layout()
-plt.savefig("output/grouping_distribution.png", dpi=150)
-
-plt.figure()
-nucc['classification'].value_counts().head(30).plot(kind='bar', rot=60)
-plt.title('Top Classifications (count)')
-plt.tight_layout()
-plt.savefig("output/classification_distribution.png", dpi=150)
-
-
-In the README, we embed the resulting PNGs with the ![alt](path) syntax.
-
+---
 5) Methodology (Step-by-Step)
 
 This repo implements a hierarchical Word2Vec + TF-IDF + Fuzzy hybrid:
