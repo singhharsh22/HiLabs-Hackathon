@@ -93,7 +93,65 @@ Classification distribution:
 ![Classification Distribution](./eda/classification_distribution.png)
 
 ---
-5) Methodology & Pipeline
+5) How to Run Locally
+
+Prereqs: Python 3.10+ recommended. No GPU required.
+
+0. Download this directory, install a virtual environment inside this directory.
+
+1. Create & activate a virtual environment
+```
+python -m venv venv
+venv\Scripts\activate
+```
+---
+2. Install dependencies
+In terminal, run :
+```
+pip install -r requirements.txt
+```
+
+3. Ensure repo structure:
+```
+.
+├── dataset/
+│   ├── nucc_taxonomy_master.csv
+│   ├── input_specialties.csv
+│   └── synonyms.csv              # optional
+├── stopwords/
+│   └── english                   # your stopword list (no NLTK download)
+├── output/                       # will be created if absent
+├── script.py                     # the end-to-end pipeline
+└── README.md
+```
+5. Run
+```
+python script.py
+```
+
+Result: output/output_specialties_hier_w2v.csv
+
+6) Repository Layout
+.
+├── dataset/
+│   ├── nucc_taxonomy_master.csv
+│   ├── input_specialties.csv
+│   └── synonyms.csv                # optional
+├── stopwords/
+│   └── english.txt                 # local stopword file
+├── output/
+│   ├── grouping_distribution.png
+│   ├── classification_distribution.png
+│   ├── nucc_head.png               # your preview image
+│   └── input_head.png              # your preview image
+├── notebooks/
+│   └── exploratory_analysis.ipynb  # optional, for EDA/plots
+├── script.py                        # hierarchical Word2Vec + fuzzy mapper
+├── requirements.txt
+└── README.md
+
+---
+7) Methodology & Pipeline
 
    This section explains how the Hierarchical Word2Vec + Fuzzy Hybrid Mapper standardizes raw provider specialties to NUCC taxonomy codes.
     The approach combines text cleaning, hierarchical Word2Vec embeddings, TF–IDF weighting, and fuzzy token matching to ensure robust mapping even for misspellings, abbreviations, and domain-specific shorthand.
@@ -256,22 +314,110 @@ Classification distribution:
     ./output/output_specialties_hier_w2v.csv
     ```
     ---
-    6) Output Schema
+    # Provider Specialty Standardization – Word2Vec Ensemble
     
-    The tool writes output/output_specialties_hier_w2v.csv with:
+    * This repository implements a multi-stage Word2Vec-based ensemble for mapping raw provider specialty text entries (e.g., "Cardio", "OB/GYN", "Accupunturist") to standardized NUCC Taxonomy codes.
+    * It was developed as part of the HiLabs Hackathon 2025 challenge: Standardizing Provider Specialties to NUCC Taxonomy.
+    * Project Structure
+   ```
+    .
+    ├── dataset/
+    │   ├── nucc_taxonomy_master.csv      # Reference taxonomy
+    │   └── input_specialties.csv         # Raw specialties to map
+    ├── synonyms.csv                      # Domain-specific synonym list
+    ├── stopwords/english                 # Local stopword list
+    ├── simple_w2v.py                     # Baseline syntactic Word2Vec model
+    ├── hier_w2v.py                       # Hierarchical semantic Word2Vec model
+    ├── ensem_w2v.py                      # Union ensemble combining both
+    └── output/                           # Optional output folder
+    ```
+   * Model Overview
+        * simple_w2v.py — Syntactic Word2Vec Mapper
+        * A lightweight, token-level embedding model emphasizing string-level similarity.
     
-    Column	Description
-    raw_specialty	Original input string (empty if missing)
-    nucc_codes	Pipe-separated list of NUCC codes or JUNK
-    confidence	Pipe-separated cosine similarities (0–1, rounded) for each returned code
-    explanation	Short rationale e.g., “Matched ‘…tokens…’ (sim=0.83)”
+    * Key features:
+    * Trains a Word2Vec model (100-dim skip-gram) on cleaned NUCC text.
+    * Expands abbreviations and synonyms using synonyms.csv.
     
-    Example:
+    Handles spelling variations using rapidfuzz fuzzy matching.
     
-    raw_specialty,nucc_codes,confidence,explanation
-    Cardio,207RC0000X,0.92,Matched 'cardiology internal medicine cardiovascular disease' (sim=0.92)
-    OBGYN,207V00000X,0.89,Matched 'obstetrics gynecology reproductive medicine' (sim=0.89)
-    Something random,JUNK,,No match ≥ 0.70. Best match: 'family medicine' (sim=0.41)
+    Represents each NUCC entry as the mean of token embeddings.
+    
+    For each raw specialty:
+    
+    Cleans text and expands synonyms.
+    
+    Filters NUCC rows with fuzzy word overlap.
+    
+    Computes cosine similarity between input and NUCC embeddings.
+    
+    Returns all codes above SIM_THRESHOLD (default = 0.8).
+    
+    Strengths:
+    
+    Robust against typos and abbreviations (e.g., 0b/gyn → OB/GYN).
+    
+    Simple, interpretable results with fuzzy explanations.
+    
+    2️⃣ hier_w2v.py — Hierarchical Semantic Word2Vec Mapper
+    
+    A deeper model incorporating semantic context and hierarchy of the NUCC taxonomy.
+    
+    Key features:
+    
+    Trains progressively on:
+    
+    grouping
+    
+    classification
+    
+    specialization + display_name + definition
+    
+    Uses TF-IDF weighted embeddings for sentence vectors.
+    
+    Combines fuzzy lexical overlap with semantic similarity.
+    
+    Produces ranked matches with similarity-based confidence scores.
+    
+    Strengths:
+    
+    Learns semantic proximity between related specialties
+    (e.g., "acupuncturist" ↔ "reflexologist").
+    
+    More context-aware than the simple model.
+    
+    3️⃣ ensem_w2v.py — Union Ensemble
+    
+    A meta-model that executes both base models and merges their predictions.
+    
+    Pipeline:
+    
+    Imports and runs both models (simple_w2v and hier_w2v).
+    
+    Aggregates results by raw_specialty.
+    
+    Combines NUCC codes using set union:
+    
+    combined_codes = codes_simple.union(codes_hier)
+    
+    
+    Labels the prediction source as:
+    
+    simple_only
+    
+    hier_only
+    
+    simple+hier
+    
+    Outputs a unified DataFrame or Excel file.
+    
+    Rationale:
+    
+    The simple model handles noisy / misspelled inputs better.
+    
+    The hierarchical model captures conceptual similarity.
+    
+    The ensemble (union) leverages both — increasing recall safely.
 
 to be safe, i think i should combine (take union of both the results)
 as simple w2v works well on spelling mistakes (like 0b/gyn) where complex one doesn't, and the complex one gives more robust predictions (embeds according to classes also, giving nearby possible answers), like accupunturist and reflexologist, which the simpler model doesn't predict, by learning a bit semantics, while the simple model learns only the syntactics
@@ -293,60 +439,8 @@ as simple w2v works well on spelling mistakes (like 0b/gyn) where complex one do
     Calibration Tip:
     Take a small labeled validation file (10–50 rows), sweep thresholds (grid search), pick the pair that maximizes your preferred metric (e.g., F1 or accuracy), and lock it in the README.
 
-8) How to Run Locally
 
-Prereqs: Python 3.10+ recommended. No GPU required.
-
-# 1) Create & activate a virtual environment
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# macOS/Linux
-# source venv/bin/activate
-
-# 2) Install dependencies
-pip install -r requirements.txt
-
-# 3) Ensure repo structure:
-# .
-# ├── dataset/
-# │   ├── nucc_taxonomy_master.csv
-# │   ├── input_specialties.csv
-# │   └── synonyms.csv              # optional
-# ├── stopwords/
-# │   └── english.txt               # your stopword list (no NLTK download)
-# ├── output/                       # will be created if absent
-# ├── script.py                     # the end-to-end pipeline
-# └── README.md
-
-# 4) Run
-python script.py
-
-
-Result: output/output_specialties_hier_w2v.csv
-
-If you’re using a notebook for EDA, save plots to output/ and embed them in this README via ![title](path).
-
-9) Repository Layout
-.
-├── dataset/
-│   ├── nucc_taxonomy_master.csv
-│   ├── input_specialties.csv
-│   └── synonyms.csv                # optional
-├── stopwords/
-│   └── english.txt                 # local stopword file
-├── output/
-│   ├── grouping_distribution.png
-│   ├── classification_distribution.png
-│   ├── nucc_head.png               # your preview image
-│   └── input_head.png              # your preview image
-├── notebooks/
-│   └── exploratory_analysis.ipynb  # optional, for EDA/plots
-├── script.py                        # hierarchical Word2Vec + fuzzy mapper
-├── requirements.txt
-└── README.md
-
-10) Notes, Limitations & Extensions
+9) Notes, Limitations & Extensions
 
 Typos vs. synonyms:
 Typos are primarily handled by fuzzy token overlap; semantic variants are handled by embeddings (plus optional synonyms).
@@ -366,21 +460,3 @@ Add domain-specific synonyms (e.g., “PM&R” → “physical medicine rehabili
 Add a lightweight spelling-correction layer before fuzzy (optional)
 
 Swap Word2Vec for BioWordVec (pretrained biomedical word2vec) if you ship the vectors locally
-
-11) FAQ
-
-Q: Does this require CUDA/GPU?
-A: No. It’s pure CPU (Gensim + RapidFuzz + scikit-learn).
-
-Q: Can I use internet APIs?
-A: No. Everything runs locally per challenge rules.
-
-Q: What if my input has blanks?
-A: We output an empty raw_specialty, empty confidence/explanation, and nucc_codes=JUNK.
-
-Q: How do I embed the preview tables and histograms in this README?
-A: Save images to ./output/ and reference them:
-![My Plot](./output/grouping_distribution.png)
-
-Author: Harsh Singh (IIT Kanpur)
-Hackathon: HiLabs 2025 — Specialty Standardization Challenge
