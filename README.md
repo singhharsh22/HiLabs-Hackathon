@@ -91,69 +91,69 @@ Classification distribution:
 ---
 5) Methodology (Step-by-Step)
 
-This repo implements a hierarchical Word2Vec + TF-IDF + Fuzzy hybrid:
-
-5.1 Text Cleaning
-
-Split CamelCase (PainSpine → Pain Spine)
-
-Lowercase, remove punctuation except / - & (kept as signals), normalize whitespace
-
-Remove stopwords using ./stopwords/english.txt (no external downloads)
-
-5.2 Build Hierarchical Corpora
-
-We prepare three corpora from the NUCC dataset:
-
-Grouping tokens
-
-Classification tokens
-
-Combined tokens = classification + specialization + display_name + definition
-
-This lets us infuse broad → fine semantics progressively.
-
-5.3 Train Word2Vec in Three Stages
-
-Train base Word2Vec on grouping tokens
-
-Update the same model on classification tokens
-
-Fine-tune on the full combined tokens
-
-This mimics the taxonomy hierarchy and nudges embeddings to respect NUCC structure without labeled supervised training.
-
-5.4 TF-IDF Weighted Sentence Embeddings
-
-Build a Gensim Dictionary over combined tokens and a TfidfModel
-
-For each NUCC row and each query, compute a TF-IDF weighted mean of token vectors
-
-This gives sentence embeddings that emphasize discriminative words
-
-5.5 Candidate Narrowing with Fuzzy Token Overlap
-
-Before cosine similarity, filter NUCC rows by token-level fuzzy match (RapidFuzz ratio)
-
-This drops obviously unrelated specialties and speeds up similarity
-
-Why both?
-
-Fuzzy catches typos/variants at token level (e.g., 0B/GYN, obgyn, ob/gyn).
-
-Embeddings capture semantic similarity across synonyms and related phrasing.
-
-5.6 Cosine Similarity & Thresholding
-
-Compute cosine similarity between the query embedding and candidate NUCC embeddings
-
-Return all matches with similarity ≥ SIM_THRESHOLD (e.g., 0.70)
-
-If none qualify, return the best match score for context or JUNK if below threshold policy
-
-5.7 Multi-Match Output
-
-The system can output multiple taxonomy codes (pipe-separated) for genuinely ambiguous inputs (e.g., “Cardio/Diab”).
+    This repo implements a hierarchical Word2Vec + TF-IDF + Fuzzy hybrid:
+    
+    5.1 Text Cleaning
+    
+    Split CamelCase (PainSpine → Pain Spine)
+    
+    Lowercase, remove punctuation except / - & (kept as signals), normalize whitespace
+    
+    Remove stopwords using ./stopwords/english.txt (no external downloads)
+    
+    5.2 Build Hierarchical Corpora
+    
+    We prepare three corpora from the NUCC dataset:
+    
+    Grouping tokens
+    
+    Classification tokens
+    
+    Combined tokens = classification + specialization + display_name + definition
+    
+    This lets us infuse broad → fine semantics progressively.
+    
+    5.3 Train Word2Vec in Three Stages
+    
+    Train base Word2Vec on grouping tokens
+    
+    Update the same model on classification tokens
+    
+    Fine-tune on the full combined tokens
+    
+    This mimics the taxonomy hierarchy and nudges embeddings to respect NUCC structure without labeled supervised training.
+    
+    5.4 TF-IDF Weighted Sentence Embeddings
+    
+    Build a Gensim Dictionary over combined tokens and a TfidfModel
+    
+    For each NUCC row and each query, compute a TF-IDF weighted mean of token vectors
+    
+    This gives sentence embeddings that emphasize discriminative words
+    
+    5.5 Candidate Narrowing with Fuzzy Token Overlap
+    
+    Before cosine similarity, filter NUCC rows by token-level fuzzy match (RapidFuzz ratio)
+    
+    This drops obviously unrelated specialties and speeds up similarity
+    
+    Why both?
+    
+    Fuzzy catches typos/variants at token level (e.g., 0B/GYN, obgyn, ob/gyn).
+    
+    Embeddings capture semantic similarity across synonyms and related phrasing.
+    
+    5.6 Cosine Similarity & Thresholding
+    
+    Compute cosine similarity between the query embedding and candidate NUCC embeddings
+    
+    Return all matches with similarity ≥ SIM_THRESHOLD (e.g., 0.70)
+    
+    If none qualify, return the best match score for context or JUNK if below threshold policy
+    
+    5.7 Multi-Match Output
+    
+    The system can output multiple taxonomy codes (pipe-separated) for genuinely ambiguous inputs (e.g., “Cardio/Diab”).
 
 6) Output Schema
 
