@@ -155,23 +155,6 @@ Result: output/output_specialties_hier_w2v.csv
 ├── ensem_w2v.py                      # Union ensemble combining both
 └── output/                           # Optional output folder
 ```
-* Model Overview
-    * simple_w2v.py — Syntactic Word2Vec Mapper
-        * A lightweight, token-level embedding model emphasizing string-level similarity.
-        * Key features:
-        * Trains a Word2Vec model (100-dim skip-gram) on cleaned NUCC text.
-        * Expands abbreviations and synonyms using synonyms.csv.
-        * Handles spelling variations using rapidfuzz fuzzy matching.
-        * Represents each NUCC entry as the mean of token embeddings.
-        * For each raw specialty:
-              * Cleans text and expands synonyms.
-              * Filters NUCC rows with fuzzy word overlap.
-              * Computes cosine similarity between input and NUCC embeddings.
-              * Returns all codes above SIM_THRESHOLD (default = 0.8).
-        * Strengths:
-              * Robust against typos and abbreviations (e.g., 0b/gyn → OB/GYN).
-              * Simple, interpretable results with fuzzy explanations.
----
 Script 1 — Simple Word2Vec + Synonym + Fuzzy Hybrid Mapper
 * This script performs semantic matching between raw medical specialties (from a user-provided dataset) and the official NUCC Taxonomy Master List using a combination of:
 * Word2Vec embeddings for semantic understanding
@@ -183,6 +166,17 @@ Script 1 — Simple Word2Vec + Synonym + Fuzzy Hybrid Mapper
     * /output/output_specialties_multi.csv
 * This CSV contains:
     * raw_specialty	nucc_codes	confidence	explanation
+* Model Overview
+    * simple_w2v.py – Syntactic Word2Vec Mapper
+    * A lightweight Word2Vec model focusing on token-level and string-level similarity.
+    * Key Details
+        * Trains a 100-dimensional skip-gram model using cleaned NUCC text.
+        * Performs fuzzy string matching (rapidfuzz) to handle spelling errors ("0b/gyn" → "ob/gyn").
+        * Expands domain abbreviations using synonyms.csv.
+        * Uses mean embedding per specialty and cosine similarity for mapping.
+        * Strengths
+            * Excels in syntactic robustness — catches spelling and abbreviation variants.
+            * Suitable when input text is noisy or incomplete.
 
 * Configuration Parameters
 Parameter	Description	Default
@@ -269,183 +263,49 @@ if fuzz.ratio(rw, nw) >= threshold:
 sims = cosine_similarity(query_vec, nucc_matrix[candidates])[0]
 valid_idxs = np.where(sims >= SIM_THRESHOLD)[0]
 ```
-
-
-
-
-   * hier_w2v.py — Hierarchical Semantic Word2Vec Mapper
-       * A deeper model incorporating semantic context and hierarchy of the NUCC taxonomy.
-       * Key features:
-           * Trains progressively on:
-               * grouping
-               * classification
-               * specialization + display_name + definition
-               * Uses TF-IDF weighted embeddings for sentence vectors.
-               * Combines fuzzy lexical overlap with semantic similarity.
-               * Produces ranked matches with similarity-based confidence scores.
+---
+Script 2 — Hierarchical Word2Vec + TF-IDF Weighted Fuzzy Mapper
+* hier_w2v.py — Hierarchical Semantic Word2Vec Mapper
+   * A deeper model incorporating semantic context and hierarchy of the NUCC taxonomy.
+   * Key features:
+       * Trains progressively on:
+           * grouping
+           * classification
+           * specialization + display_name + definition
+           * Uses TF-IDF weighted embeddings for sentence vectors.
+           * Combines fuzzy lexical overlap with semantic similarity.
+           * Produces ranked matches with similarity-based confidence scores.
         * Strengths:
         * Learns semantic proximity between related specialties (e.g., "acupuncturist" ↔ "reflexologist").
         * More context-aware than the simple model.
-* Model Overview
-    * simple_w2v.py – Syntactic Word2Vec Mapper
-    * A lightweight Word2Vec model focusing on token-level and string-level similarity.
-    * Key Details
-    * Trains a 100-dimensional skip-gram model using cleaned NUCC text.
-    * Performs fuzzy string matching (rapidfuzz) to handle spelling errors ("0b/gyn" → "ob/gyn").
-    * Expands domain abbreviations using synonyms.csv.
-    * Uses mean embedding per specialty and cosine similarity for mapping.
-    * Outputs
-
-./output/output_specialties_multi.csv
-Contains columns: raw_specialty, nucc_codes, explanation.
-
-Strengths
-
-Excels in syntactic robustness — catches spelling and abbreviation variants.
-
-Suitable when input text is noisy or incomplete.
-
-2️⃣ hier_w2v.py – Hierarchical Semantic Word2Vec Mapper
-
-A context-aware model that leverages NUCC taxonomy hierarchy and TF-IDF weighting to learn semantically richer embeddings.
-
-Key Details
-
-Trains sequentially on:
-
-grouping → classification → specialization + definition
-
-Applies TF-IDF weighting during sentence embedding.
-
-Combines fuzzy lexical overlap with cosine similarity over learned vectors.
-
-Provides confidence scores per match.
-
-Outputs
-
+    * Strengths
+        * Excels in syntactic robustness — catches spelling and abbreviation variants.
+        * Suitable when input text is noisy or incomplete.
+        * hier_w2v.py – Hierarchical Semantic Word2Vec Mapper
+        * A context-aware model that leverages NUCC taxonomy hierarchy and TF-IDF weighting to learn semantically richer embeddings.
+  * Key Details
+      * Trains sequentially on:
+          * grouping → classification → specialization + definition
+          * Applies TF-IDF weighting during sentence embedding.
+          * Combines fuzzy lexical overlap with cosine similarity over learned vectors.
+          * Provides confidence scores per match.
+    * Output
 ./output/output_specialties_hier_w2v.csv
-Columns: raw_specialty, nucc_codes, confidence, explanation.
-
-Strengths
-
-Captures semantic proximity between conceptually related specialties
-(e.g., "acupuncturist" ↔ "reflexologist").
-
-More robust when context or domain meaning matters.
-
-3️⃣ ensem_w2v.py – Union Ensemble (Recommended)
-
-A meta-model that runs both models automatically, merges their results, and produces a final unified prediction CSV.
-
-Working Logic
-
-Imports and executes both base scripts (simple_w2v and hier_w2v).
-
-Aggregates and merges predictions by raw_specialty.
-
-Takes the union of NUCC codes from both models:
-
-combined_codes = codes_simple.union(codes_hier)
-
-
-Labels each prediction source as:
-
-simple_only
-
-hier_only
-
-simple+hier
-
-Produces a consolidated, high-confidence result table.
-
-Outputs
-
-./output/output_union_ensemble.csv (or .xlsx)
-Columns:
-raw_specialty, nucc_codes, source, explanation_simple, explanation_hier
-
-Why It’s Better
-
-Combines syntactic recall (from the simple model) with semantic precision (from the hierarchical model).
-
-The union ensemble ensures no valid prediction is lost — maximizing accuracy safely.
-
-
-Below is another promising attempt of mine, which cannot be completed due to time constraints.
-* ensem_w2v.py — Union Ensemble
-    * A meta-model that executes both base models and merges their predictions.
-
-* Pipeline:
-   * Imports and runs both models (simple_w2v and hier_w2v).
-   * Aggregates results by raw_specialty.
-   * Combines NUCC codes using set union:
-   * combined_codes = codes_simple.union(codes_hier)
-
-* Labels the prediction source as:
-    * simple_only
-    * hier_only
-    * simple+hier
-
-* Outputs a unified DataFrame or Excel file.
-
-* Rationale:
-    * The simple model handles noisy / misspelled inputs better.
-    * The hierarchical model captures conceptual similarity.
-    * The ensemble (union) leverages both — increasing recall safely.
-
-Model Overview
-simple_w2v.py – Syntactic Word2Vec Mapper
-
-A lightweight Word2Vec model focusing on token-level and string-level similarity.
-
-Key Details
-
-Trains a 100-dimensional skip-gram model using cleaned NUCC text.
-
-Performs fuzzy string matching (rapidfuzz) to handle spelling errors ("0b/gyn" → "ob/gyn").
-
-Expands domain abbreviations using synonyms.csv.
-
-Uses mean embedding per specialty and cosine similarity for mapping.
-
-Outputs
-
-./output/output_specialties_multi.csv
-Contains columns: raw_specialty, nucc_codes, explanation.
-
-Strengths
-
-Excels in syntactic robustness — catches spelling and abbreviation variants.
-
-Suitable when input text is noisy or incomplete.
-
+* Columns: raw_specialty, nucc_codes, confidence, explanation.
 hier_w2v.py – Hierarchical Semantic Word2Vec Mapper
 
-A context-aware model that leverages NUCC taxonomy hierarchy and TF-IDF weighting to learn semantically richer embeddings.
+    * A context-aware model that leverages NUCC taxonomy hierarchy and TF-IDF weighting to learn semantically richer embeddings.
+    * Applies TF-IDF weighting during sentence embedding.
+    * Combines fuzzy lexical overlap with cosine similarity over learned vectors.
+    * Provides confidence scores per match.
+    * Strengths
+        * Captures semantic proximity between conceptually related specialties (e.g., "acupuncturist" ↔ "reflexologist").
+        * More robust when context or domain meaning matters.
 
-Key Details
 
-Trains sequentially on:
 
-grouping → classification → specialization + definition
+---
 
-Applies TF-IDF weighting during sentence embedding.
-
-Combines fuzzy lexical overlap with cosine similarity over learned vectors.
-
-Provides confidence scores per match.
-
-Outputs
-
-./output/output_specialties_hier_w2v.csv
-Columns: raw_specialty, nucc_codes, confidence, explanation.
-
-Strengths
-
-Captures semantic proximity between conceptually related specialties
-(e.g., "acupuncturist" ↔ "reflexologist").
-
-More robust when context or domain meaning matters.
 
 ensem_w2v.py – Union Ensemble (Recommended)
 
@@ -484,8 +344,59 @@ Combines syntactic recall (from the simple model) with semantic precision (from 
 
 The union ensemble ensures no valid prediction is lost — maximizing accuracy safely.
 
-to be safe, i think i should combine (take union of both the results)
-as simple w2v works well on spelling mistakes (like 0b/gyn) where complex one doesn't, and the complex one gives more robust predictions (embeds according to classes also, giving nearby possible answers), like accupunturist and reflexologist, which the simpler model doesn't predict, by learning a bit semantics, while the simple model learns only the syntactics
+* Strengths
+    * Captures semantic proximity between conceptually related specialties (e.g., "acupuncturist" ↔ "reflexologist").
+    * More robust when context or domain meaning matters.
+    * ensem_w2v.py – Union Ensemble (Recommended)
+    * A meta-model that runs both models automatically, merges their results, and produces a final unified prediction CSV.
+
+* Working Logic
+    * Imports and executes both base scripts (simple_w2v and hier_w2v).
+    * Aggregates and merges predictions by raw_specialty.
+    * Takes the union of NUCC codes from both models:
+```
+combined_codes = codes_simple.union(codes_hier)
+```
+
+* Labels each prediction source as:
+    * simple_only
+    * hier_only
+    * simple+hier
+
+* Produces a consolidated, high-confidence result table.
+
+* Outputs
+./output/output_union_ensemble.csv (or .xlsx)
+
+* Columns:
+raw_specialty, nucc_codes, source, explanation_simple, explanation_hier
+
+* Why It’s Better
+* Combines syntactic recall (from the simple model) with semantic precision (from the hierarchical model).
+* The union ensemble ensures no valid prediction is lost — maximizing accuracy safely.
+
+* Below is another promising attempt of mine, which cannot be completed due to time constraints.
+  * ensem_w2v.py — Union Ensemble
+    * A meta-model that executes both base models and merges their predictions.
+
+* Pipeline:
+   * Imports and runs both models (simple_w2v and hier_w2v).
+   * Aggregates results by raw_specialty.
+   * Combines NUCC codes using set union:
+   * combined_codes = codes_simple.union(codes_hier)
+
+* Labels the prediction source as:
+    * simple_only
+    * hier_only
+    * simple+hier
+
+* Outputs a unified DataFrame or Excel file.
+
+* Rationale:
+    * The simple model handles noisy / misspelled inputs better.
+    * The hierarchical model captures conceptual similarity.
+    * The ensemble (union) leverages both — increasing recall safely.
+
 
     7) Confidence Tuning
     
