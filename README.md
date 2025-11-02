@@ -35,6 +35,7 @@ Mapping noisy provider specialties to official NUCC taxonomy codes
 2) Datasets Provided
 
     NUCC Taxonomy Master: dataset/nucc_taxonomy_master.csv
+   
    Columns typically include:
     
     * code — the NUCC taxonomy code (primary output)
