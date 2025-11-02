@@ -9,9 +9,9 @@ venv\Scripts\activate         # Windows
 
 # Install dependencies
 pip install -r requirements.txt
+```
 
-
-🏥 HiLabs Hackathon 2025 — Specialty Standardization Challenge
+# HiLabs Hackathon 2025 — Specialty Standardization Challenge
 Mapping noisy provider specialties to official NUCC taxonomy codes
 1) Problem Introduction
 
