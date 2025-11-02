@@ -5,7 +5,6 @@ An intelligent system that takes unstandardized specialties and maps them to off
 ```bash
 # Create a virtual environment
 python -m venv venv
-source venv/bin/activate      # Linux / macOS
 venv\Scripts\activate         # Windows
 
 # Install dependencies
